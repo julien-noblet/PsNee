@@ -12,7 +12,10 @@
     // Uncomment #define PU22_MODE for PU-22, PU-23, PU-41 mainboards.
 
     #define PU22_MODE
-
+    
+    // Uncomment #define LOG for logging /!\ + 1574B in flash  + 103B in ram
+    // #define LOG
+    
     //Pins
     const int data = 8;         // Arduino pin 8, ATmega PB0 injects SCEX string. point 6 in old modchip Diagrams
     const int SUBQ = 10;     // Arduino pin 10, ATmega PB2 "SUBQ" Mechacon pin 24 (PU-7 and early PU-8 Mechacons: pin 39)
@@ -94,9 +97,10 @@
       pinMode(SUBQ, INPUT); // spi data in Arduino pin 10, ATmega PB2
       pinMode(SQCK, INPUT); // spi clock Arduino pin 11, ATmega PB3
       pinMode(LED_BUILTIN, OUTPUT); // Blink on injection / debug.
-      Serial.begin (1000000);
-      Serial.println("Start ");
-     
+      #if defined( LOG )
+        Serial.begin (1000000);
+        Serial.println("Start ");
+      #endif
       // Power saving
       // Disable the ADC by setting the ADEN bit (bit 7)  of the
       // ADCSRA register to zero.
@@ -111,7 +115,9 @@
 
     void loop()
     {
-      static unsigned int num_resets = 0; // debug / testing
+      #if defined( LOG )
+        static unsigned int num_resets = 0; // debug / testing
+      #endif
       static byte scbuf [12] = { 0 }; // We will be capturing PSX "SUBQ" packets, there are 12 bytes per valid read.
       static byte scpos = 0;          // scbuf position
 
@@ -136,7 +142,9 @@
           if (timeout_clock_counter > sampling_timeout){
             scpos = 0;  // reset SUBQ packet stream
             timeout_clock_counter = 0;
-            num_resets++;
+            #if defined ( LOG )
+              num_resets++;
+            #endif
             bitpos = 0;
             goto timedout;
           }
@@ -169,16 +177,17 @@
       interrupts(); // end critical section
      
       // logging.
-      if (!(scbuf[0] == 0 && scbuf[1] == 0 && scbuf[2] == 0 && scbuf[3] == 0)){ // a bad sector read is all 0 except for the CRC fields. Don't log it.
-        for (int i = 0; i<12;i++) {
-          Serial.print(scbuf[i], HEX);
-          Serial.print(" ");
+      #if defined( LOG )
+        if (!(scbuf[0] == 0 && scbuf[1] == 0 && scbuf[2] == 0 && scbuf[3] == 0)){ // a bad sector read is all 0 except for the CRC fields. Don't log it.
+          for (int i = 0; i<12;i++) {
+            Serial.print(scbuf[i], HEX);
+            Serial.print(" ");
+          }
+          Serial.print(" resets:  ");
+          Serial.println(num_resets);
         }
-        Serial.print(" resets:  ");
-        Serial.println(num_resets);
-      }
-
-      num_resets = 0;
+        num_resets = 0;
+      #endif
       scpos = 0;
      
       // check if this is the wobble area
@@ -186,9 +195,9 @@
       if ( (scbuf[0] == 0x41 &&  scbuf[1] == 0x00 &&  scbuf[6] == 0x00) && // 0x41 = psx game, beginning of the disc, sanity check
         ((scbuf[2] == 0xA0 || scbuf[2] == 0xA1 || scbuf[2] == 0xA2) ||
         (scbuf[2] > 0x00 && scbuf[2] <= 0x99)) ){ // lead in / wobble area
-       
+        #if defined( LOG )
         Serial.println("INJECT!");
-
+        #endif
         pinMode(data, OUTPUT); // prepare for SCEX injection
 
         bitClear(PORTB,0); // pull data low
