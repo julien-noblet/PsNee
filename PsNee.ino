@@ -123,7 +123,7 @@
 
       static unsigned int timeout_clock_counter = 0;
       static byte bitbuf = 0;         // SUBQ bit storage
-      static bool sample = 0;
+      //static bool sample = 0;
 
       // Capture 8 bits per loop run.
       // unstable clock, bootup, reset and disc changes are ignored
@@ -156,9 +156,9 @@
     #endif
 
         // sample the bit.
-        sample = bitRead(PINB, 2);
-        bitbuf |= sample << bitpos;
-
+        // sample = bitRead(PINB, 2);
+        // bitbuf |= sample << bitpos;
+        bitbuf |= bitRead(PINB, 2) << bitpos;
         do {
           // nothing
         } while ((bitRead(PINB, 3)) == 0); // Note: Even if sampling is bad, it will not get stuck here. There will be clock pulses eventually.
