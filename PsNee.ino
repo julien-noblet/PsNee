@@ -4,10 +4,10 @@
 
     // PAL PU-41 support isn't implemented here yet. Use PsNee v6 for them.
 
-    // Choose the correct inject_SCEX() for your console region.
-    // e = Europe / PAL
-    // a = North America / NTSC-U
-    // i = Japan / NTSC-J
+    // Choose the correct console region.
+    #define PAL
+    // #define NTSCU
+    // #define NTSCJ
 
     // Uncomment #define PU22_MODE for PU-22, PU-23, PU-41 mainboards.
     #define PU22_MODE
@@ -42,19 +42,30 @@
     //SCEE: 1 00110101 00, 1 00111101 00, 1 01011101 00, 1 01011101 00
     //SCEA: 1 00110101 00, 1 00111101 00, 1 01011101 00, 1 01111101 00
     //SCEI: 1 00110101 00, 1 00111101 00, 1 01011101 00, 1 01101101 00
-    const boolean SCEEData[44] = {1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,1,0,1,0,0,1,0,1,0,1,1,1,0,1,0,0,1,0,1,0,1,1,1,0,1,0,0}; //SCEE
-    const boolean SCEAData[44] = {1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,1,0,1,0,0,1,0,1,0,1,1,1,0,1,0,0,1,0,1,1,1,1,1,0,1,0,0}; //SCEA
-    const boolean SCEIData[44] = {1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,1,0,1,0,0,1,0,1,0,1,1,1,0,1,0,0,1,0,1,1,0,1,1,0,1,0,0}; //SCEI
+    //const boolean SCEEData[44] = {1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,1,0,1,0,0,1,0,1,0,1,1,1,0,1,0,0,1,0,1,0,1,1,1,0,1,0,0}; //SCEE
+    //const boolean SCEAData[44] = {1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,1,0,1,0,0,1,0,1,0,1,1,1,0,1,0,0,1,0,1,1,1,1,1,0,1,0,0}; //SCEA
+    //const boolean SCEIData[44] = {1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,1,0,1,0,0,1,0,1,0,1,1,1,0,1,0,0,1,0,1,1,0,1,1,0,1,0,0}; //SCEI
 
-    void inject_SCEX(char region)
+    void inject_SCEX()
     {
-      const boolean *SCEXData;
-      switch (region){
-        case 'e': SCEXData = SCEEData; break;
-        case 'a': SCEXData = SCEAData; break;
-        case 'i': SCEXData = SCEIData; break;
-      }
+      // const boolean *SCEXData;
+      //switch (region){
+      //  case 'e': SCEXData = SCEEData; break;
+        //case 'a': SCEXData = SCEAData; break;
+        //case 'i': SCEXData = SCEIData; break;
+      //}
 
+      #if defined( PAL )
+        const boolean SCEXData[44] = {1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,1,0,1,0,0,1,0,1,0,1,1,1,0,1,0,0,1,0,1,0,1,1,1,0,1,0,0};
+      #endif
+      #if defined( NTSCU )
+        const boolean SCEXData[44] = {1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,1,0,1,0,0,1,0,1,0,1,1,1,0,1,0,0,1,0,1,1,1,1,1,0,1,0,0};
+      #endif
+      #if defined( NTSCJ )
+        const boolean SCEXData[44] = {1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,1,0,1,0,0,1,0,1,0,1,1,1,0,1,0,0,1,0,1,1,0,1,1,0,1,0,0};
+      #endif
+      
+      
       static const bool high_low = 1;
 
       digitalWrite(LED_BUILTIN, HIGH); // this is Arduino Pin 13 / PB5
@@ -210,7 +221,7 @@
        
         for (int loop_counter = 0; loop_counter < 2; loop_counter++)
         {
-           inject_SCEX('e'); // e = SCEE, a = SCEA, i = SCEI
+           inject_SCEX(); // e = SCEE, a = SCEA, i = SCEI
         }
 
         pinMode(data, INPUT); // high-z the data line, we're done
