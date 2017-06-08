@@ -10,7 +10,6 @@
     // i = Japan / NTSC-J
 
     // Uncomment #define PU22_MODE for PU-22, PU-23, PU-41 mainboards.
-
     #define PU22_MODE
     
     // Uncomment #define LOG for logging /!\ + 1574B in flash  + 103B in ram
@@ -25,12 +24,14 @@
     const int delay_between_injections = 74; // 74 original, 72 in oldcrow (milliseconds)
 
     // for PU-22 mode: specific delay times for the high bit injection. It depends on the MCU speed.
-    #if F_CPU == 16000000
-    const byte gate_high = 21;
-    const byte gate_low = 23;
-    #else
-    const byte gate_high = 20;
-    const byte gate_low = 20;
+    #if defined( PU22_MODE )
+      #if F_CPU == 16000000
+        const byte gate_high = 21;
+        const byte gate_low = 23;
+      #else
+        const byte gate_high = 20;
+        const byte gate_low = 20;
+      #endif
     #endif
 
     // SQCK (SUBQ clock) sampling timeout: All PSX will transmit 12 packets of 8 bit / 1 byte each, once CD reading is stable.
@@ -69,7 +70,7 @@
         {
           unsigned long now = micros();
           do {
-    #ifdef PU22_MODE
+    #if defined( PU22_MODE )
             bitWrite(PORTB,0,high_low); // output wfck like signal on data pin
             delayMicroseconds(gate_high);
             bitWrite(PORTB,0,!high_low);
