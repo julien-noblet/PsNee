@@ -11,8 +11,10 @@
 // i = Japan / NTSC-J
 
 // Uncomment #define PU22_MODE for PU-22, PU-23, PU-41 mainboards.
-
 #define PU22_MODE
+
+// Uncomment #define LOG for logging /!\ + 1574B in flash  + 103B in ram
+// #define LOG
 
 //Pins
 const int data = 8;         // Arduino pin 8, ATmega PB0 injects SCEX string. point 6 in old modchip Diagrams
@@ -75,12 +77,14 @@ void inject_SCEX(char region)
 #endif
       }
       while ((micros() - now) < delay_between_bits);
-      //Serial.println((micros() - now));
+      #if defined( LOG )
+        Serial.println((micros() - now));
+      #endif
     }
   }
   bitClear(PORTB,0); // pull data low
   delay(delay_between_injections);
- 
+
   digitalWrite(LED_BUILTIN, LOW);
 }
 
@@ -93,9 +97,10 @@ void setup()
   pinMode(SUBQ, INPUT); // spi data in Arduino pin 10, ATmega PB2
   pinMode(SQCK, INPUT); // spi clock Arduino pin 11, ATmega PB3
   pinMode(LED_BUILTIN, OUTPUT); // Blink on injection / debug.
-  Serial.begin (1000000);
-  Serial.println("Start ");
- 
+  #if defined( LOG )
+    Serial.begin (1000000);
+    Serial.println("Start ");
+  #endif
   // Power saving
   // Disable the ADC by setting the ADEN bit (bit 7)  of the
   // ADCSRA register to zero.
@@ -141,7 +146,7 @@ timedout:
       }
     }
     while (bitRead(PINB, 3) == 1); // wait for clock to go low
-   
+
 #if F_CPU == 16000000 // wait a few cpu cycles > better readings in tests
     __asm__("nop\n\t"); __asm__("nop\n\t"); __asm__("nop\n\t");
 #endif
@@ -156,7 +161,7 @@ timedout:
 
     timeout_clock_counter = 0; // This bit came through fine.
   }
- 
+
   scbuf[scpos] = bitbuf;
   scpos++;
   bitbuf = 0;
@@ -166,37 +171,41 @@ timedout:
   }
 
   interrupts(); // end critical section
- 
+
   // logging.
-  if (!(scbuf[0] == 0 && scbuf[1] == 0 && scbuf[2] == 0 && scbuf[3] == 0)){ // a bad sector read is all 0 except for the CRC fields. Don't log it.
-    for (int i = 0; i<12;i++) {
-      Serial.print(scbuf[i], HEX);
-      Serial.print(" ");
+  #if defined( LOG )
+    if (!(scbuf[0] == 0 && scbuf[1] == 0 && scbuf[2] == 0 && scbuf[3] == 0)){ // a bad sector read is all 0 except for the CRC fields. Don't log it.
+      for (int i = 0; i<12;i++) {
+        Serial.print(scbuf[i], HEX);
+        Serial.print(" ");
+      }
+      Serial.print(" resets:  ");
+      Serial.println(num_resets);
     }
-    Serial.print(" resets:  ");
-    Serial.println(num_resets);
-  }
+  #endif
 
   num_resets = 0;
   scpos = 0;
- 
+
   // check if this is the wobble area
   // 3 bytes would be enough to recognize it. The extra checks just ensure this isn't a garbage reading.
   if ( (scbuf[0] == 0x41 &&  scbuf[1] == 0x00 &&  scbuf[6] == 0x00) && // 0x41 = psx game, beginning of the disc, sanity check
     ((scbuf[2] == 0xA0 || scbuf[2] == 0xA1 || scbuf[2] == 0xA2) ||
     (scbuf[2] > 0x00 && scbuf[2] <= 0x99)) ){ // lead in / wobble area
-   
-    Serial.println("INJECT!");
+
+    #if defined( LOG )
+      Serial.println("INJECT!");
+    #endif
 
     pinMode(data, OUTPUT); // prepare for SCEX injection
 
     bitClear(PORTB,0); // pull data low
-   
+
     // HC-05 is waiting for a bit of silence (pin Low) before it begins decoding.
      // minimum 66ms required on SCPH-7000
      // minimum 79ms required on SCPH-7502
      delay(82);
-   
+
     for (int loop_counter = 0; loop_counter < 2; loop_counter++)
     {
        inject_SCEX('e'); // e = SCEE, a = SCEA, i = SCEI
@@ -247,5 +256,3 @@ timedout:
 //   is available
 // - The /xlat signal is no longer required to time the PAL SCPH-102 NTSC BIOS-patch
 // - Only AVR PORTB is used for compatibility reasons (almost all the AVR chips available have PORTB)
-
-
